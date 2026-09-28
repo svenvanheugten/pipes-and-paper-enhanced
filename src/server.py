@@ -5,14 +5,20 @@ from dataclasses import dataclass
 from enum import Enum
 import functools
 import json
+import os
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from threading import Thread
+from urllib.parse import unquote, urlsplit
 
 import websockets.legacy.server
 
 from src.connection import (SCREEN_DEVICE_PER_MODEL, get_remarkable_model,
                             get_screen_listener)
 from src.screen_api import EventCodes, EventTypes, get_screen_input
+
+# Only files below this directory are ever served.
+PROJECT_ROOT = os.path.realpath(
+    os.path.join(os.path.dirname(__file__), os.pardir))
 
 
 def websocket_payload(payload_type, message: List[Union[Enum, tuple]]):
@@ -92,30 +98,52 @@ class Websocket(Thread):
 
 
 class HttpHandler(SimpleHTTPRequestHandler):
+    def resolve(self, path):
+        """Turn a request path into a file path inside PROJECT_ROOT, or None."""
+        candidate = os.path.realpath(
+            os.path.join(PROJECT_ROOT, path.lstrip("/")))
+        if candidate != PROJECT_ROOT and not candidate.startswith(PROJECT_ROOT + os.sep):
+            print("REQUEST OUTSIDE OF THE PROJECT DIRECTORY: ", self.path)
+            return None
+        return candidate
+
     def do_GET(self):
+        # The query string is not part of the file path.
+        path = unquote(urlsplit(self.path).path)
+
         type = "text/html"
         # Switch on path
-        if self.path == "/":
-            self.path = "/index.html"
-        elif self.path.startswith("/static/js/"):
+        if path == "/":
+            path = "/index.html"
+        elif path.startswith("/static/js/"):
             type = "text/javascript"
-        elif self.path.startswith("/static/img/"):
+        elif path.startswith("/static/img/"):
             type = "image/svg+xml"
         else:
             print("UNRECONGIZED REQUEST: ", self.path)
-            self.path = "/404"
+            path = None
 
-        if self.path != "/404":
-            self.send_response(200)
-        else:
+        file_path = self.resolve(path) if path else None
+
+        content = None
+        if file_path:
+            try:
+                with open(file_path, "rb") as file:
+                    content = file.read()
+            except OSError:
+                print("CAN NOT READ: ", file_path)
+
+        if content is None:
             self.send_response(404)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            return
 
+        self.send_response(200)
         self.send_header("Content-type", type)
+        self.send_header("Content-Length", str(len(content)))
         self.end_headers()
-
-        if self.path != "/404":
-            with open(self.path[1:], 'rb') as file:
-                self.wfile.write(file.read())  # Send
+        self.wfile.write(content)  # Send
 
 
 def run_http_server(port: int, server_class=HTTPServer, handler_class=HttpHandler):
