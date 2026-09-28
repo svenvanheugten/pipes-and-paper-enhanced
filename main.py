@@ -16,7 +16,8 @@ def run_debug(ssh_hostname):
     print(f"Listening on {device} through {ssh_hostname}")
 
     while not listener.returncode:
-        screen_input = loop.run_until_complete(get_screen_input(listener))
+        screen_input = loop.run_until_complete(
+            get_screen_input(model, listener))
         if not screen_input:
             continue
         print(f"{screen_input=}")
