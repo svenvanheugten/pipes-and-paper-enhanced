@@ -36,10 +36,18 @@ def websocket_payload(payload_type, message: List[Union[Enum, tuple]]):
 
 
 class Websocket(Thread):
-    def __init__(self, ssh_hostname: str, port: int = 6789, address: str = "localhost") -> None:
+    def __init__(self, ssh_hostname: str, http_port: int, port: int = 6789,
+                 address: str = "localhost") -> None:
         self.port = port
         self.address = address
         self.ssh_hostname = ssh_hostname
+        # Pages served by our own HTTP server, plus None for non browser
+        # clients, which send no Origin header at all.
+        self.origins = [
+            None,
+            f"http://localhost:{http_port}",
+            f"http://127.0.0.1:{http_port}",
+        ]
         super().__init__(daemon=True)
 
     def run(self):
@@ -60,7 +68,8 @@ class Websocket(Thread):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(
-            websockets.legacy.server.serve(partial_handler, self.address, self.port)
+            websockets.legacy.server.serve(
+                partial_handler, self.address, self.port, origins=self.origins)
         )
         print(
             f"Websocket ready and running on http://{self.address}:{self.port}")

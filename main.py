@@ -23,7 +23,7 @@ def run_debug(ssh_hostname):
 
 
 def run_server(ssh_hostname, http_port):
-    websocket_thread = Websocket(ssh_hostname=ssh_hostname)
+    websocket_thread = Websocket(ssh_hostname=ssh_hostname, http_port=http_port)
     websocket_thread.start()
     run_http_server(http_port)
 
