@@ -21,16 +21,18 @@ runCommandPath=~/Develop/pipes-and-paper-enhanced
 echo "** searching for reMarkable..."
 # e.g. wifi
 ping -c 1 -t 5 $rMhostname
+pingStatus=$?
 # not found
-if (( ? != 0 )) then
+if [ $pingStatus -ne 0 ]; then
   # try e.g. usb
   rMhostname=$rMhostname2
   echo "trying $rMhostname..."
   ping -c 1 -t 5 $rMhostname
+  pingStatus=$?
 fi
 
 # evaluate exit code
-if [ $? -eq 0 ]
+if [ $pingStatus -eq 0 ]
 then
   echo "** reMarkable was found"
   echo "** connecting whiteboard to $rMhostname"
