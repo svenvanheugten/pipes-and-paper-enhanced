@@ -47,6 +47,15 @@ Setup:
 - Optional: activate the virtual environnement `source .venv/bin/activate`
 - Install the project dependencies `pip3 install -r requirements.txt`
 
+### With Nix
+
+A flake is provided, so no manual virtualenv is needed:
+
+- Run it directly: `nix run . -- --ssh-hostname rem`
+- Or get a shell with Python and the dependencies: `nix develop`, then `python3 main.py`
+
+The packaged binary has `ssh` on its `PATH` already.
+
 ### For MacOS users
 
 A convenience script that one can use as any other MacOS application can be found `rMwhiteboard.command`.
