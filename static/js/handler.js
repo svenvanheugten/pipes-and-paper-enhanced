@@ -41,7 +41,9 @@ websocket.onmessage = function (event) {
     switch (data.type) {
         case "tool":
             handle_tool_message(Object.keys(data.message)[0]);
+            break;
         case "coordinates":
             handle_coordinate_message(data.message);
+            break;
     }
 };

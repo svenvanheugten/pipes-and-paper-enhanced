@@ -100,7 +100,9 @@ class Websocket(Thread):
                     await websocket.send(websocket_payload("coordinates", {"x": x, "y": y, "pressure": pressure}))
                 # It's sending tool used
                 elif screen_input.type == EventTypes.KEY and screen_input.code in (EventCodes.ERASER, EventCodes.TIP):
-                    await websocket.send(websocket_payload("tool", [screen_input.code]))
+                    # The decoder hands us a plain int; the payload needs the
+                    # enum so the client gets a tool name it knows.
+                    await websocket.send(websocket_payload("tool", [EventCodes(screen_input.code)]))
             print("Disconnected from ReMarkable.")
         finally:
             listener.kill()
